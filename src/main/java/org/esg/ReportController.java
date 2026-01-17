@@ -1,22 +1,28 @@
 package org.esg;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.esg.services.CsvImportService;
+import org.esg.services.EnergyAggregationService;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
+@RequestMapping("/api/esg")
 public class ReportController {
 
     private final WaterRepo repo;
+    private final CsvImportService importService;
+    private final EnergyAggregationService aggregationService;
 
-    public ReportController(WaterRepo repo) {
+    public ReportController(WaterRepo repo, CsvImportService importService, EnergyAggregationService aggregationService) {
         this.repo = repo;
+        this.importService = importService;
+        this.aggregationService = aggregationService;
     }
 
-    @GetMapping("/api/esg/water/report")
+    @GetMapping("/water/report")
     public Map<String, Object> report() {
         var all = repo.findAll();
         var byDept = all.stream()
@@ -31,5 +37,16 @@ public class ReportController {
                         .collect(Collectors.joining("; "))
         );
         return Map.of("total_m3", total, "by_department", byDept, "vsme_text", text);
+    }
+
+    @PostMapping("/import")
+    public String importCsv() {
+        try {
+            importService.importCsv();
+            aggregationService.aggregate();
+            return "CSV imported and aggregated.";
+        } catch (Exception e) {
+            return "CSV import failed: " + e.getMessage();
+        }
     }
 }

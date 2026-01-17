@@ -1,26 +1,22 @@
 package org.esg;
 
 import com.opencsv.CSVReader;
-import org.springframework.transaction.annotation.Transactional;
+import org.esg.models.RawEnergyImport;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
 
     private final RawEnergyImportRepository rawRepo;
+
     @Value("${user.dir}")
     private String userDir;
 
@@ -31,66 +27,44 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-
         try (CSVReader reader = new CSVReader(
                 new InputStreamReader(new FileInputStream(userDir + "/Wasserverbrauchsdaten/Innolab.csv")))) {
 
-            // Flatten CSV rows to first column for easier filtering
             List<String> rows = reader.readAll().stream()
-                    .map(r -> r[0] != null ? r[0] : "")
-                    .collect(Collectors.toList());
-
-            // Remove "empty" rows where all characters are ';'
-            rows = rows.stream()
-                    .filter(row -> !row.chars().allMatch(c -> c == ';'))
+                    .map(row -> row[0])
+                    .filter(row -> row != null && !row.chars().allMatch(c -> c == ';')) // remove empty/';' rows
                     .toList();
 
             String currentPeriod = null;
 
             for (String row : rows) {
-                if (row.isBlank()) continue;
-
-                if (isPeriodRow(row)) {
-                    currentPeriod = extractPeriod(row);
+                if (row.startsWith(";")) {
+                    // This row defines a new period
+                    currentPeriod = row.replace(";", "").trim();
                 } else {
+                    // Data row
                     String[] data = row.split(";");
                     parseDataRow(data, currentPeriod);
                 }
             }
 
-            System.out.println("Import abgeschlossen.");
+            System.out.println("CSV import completed.");
         }
     }
 
-    /** Check if this row is a period header like ";2024/2025 ..." */
-    private boolean isPeriodRow(String row) {
-        return row.startsWith(";") && row.matches(";\\d{4}/\\d{4}.*");
-    }
+    private void parseDataRow(String[] data, String periodLabel) {
+        if (data.length < 9) return; // safety
 
-    /** Extract period string from a header row */
-    private String extractPeriod(String row) {
-        // Remove leading semicolon and trailing spaces
-        return row.replaceFirst("^;", "").trim().split(" ")[0];
-    }
+        MonthYear my = convertMonth(data[0]);
+        if (my == null) return;
 
-    /** Parse a normal data row and save to database */
-    private void parseDataRow(String[] row, String period) {
-        try {
-            MonthYear my = convertMonth(row[0]);
-            if (my == null) return;
-
-            saveValue(period, my, "Bauteil B", row[1], row[2]);
-            saveValue(period, my, "Bauteil C", row[3], row[4]);
-            saveValue(period, my, "Bauteil A & F", row[5], row[6]);
-            saveValue(period, my, "Energy Base", row[7], row[8]);
-
-        } catch (Exception ex) {
-            System.err.println("Fehler bei Zeile " + Arrays.toString(row) + ": " + ex.getMessage());
-        }
+        saveValue(periodLabel, my, "Bauteil B", data[1], data[2]);
+        saveValue(periodLabel, my, "Bauteil C", data[3], data[4]);
+        saveValue(periodLabel, my, "Bauteil A & F", data[5], data[6]);
+        saveValue(periodLabel, my, "Energy Base", data[7], data[8]);
     }
 
     private void saveValue(String period, MonthYear my, String location, String val, String unit) {
-
         if (val == null || val.equalsIgnoreCase("xx") || val.isBlank()) return;
 
         RawEnergyImport e = new RawEnergyImport();
@@ -101,11 +75,11 @@ public class DataInitializer implements CommandLineRunner {
         e.setValue(val);
         e.setUnit(unit);
 
-        rawRepo.save(e);
+        rawRepo.save(e); // now works because entity has an id
+        rawRepo.flush();
     }
 
     private MonthYear convertMonth(String label) {
-
         Map<String, Integer> months = Map.ofEntries(
                 Map.entry("Sep", 9), Map.entry("Okt", 10), Map.entry("Nov", 11),
                 Map.entry("Dez", 12), Map.entry("Jän", 1), Map.entry("Feb", 2),
@@ -121,7 +95,6 @@ public class DataInitializer implements CommandLineRunner {
             if (month == null) return null;
 
             int year = 2000 + Integer.parseInt(parts[1]);
-
             return new MonthYear(month, year);
 
         } catch (Exception e) {

@@ -1,8 +1,6 @@
 package org.esg;
 
+import org.esg.models.RawEnergyImport;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
-public interface RawEnergyImportRepository extends JpaRepository<RawEnergyImport, Long> {
-}
+public interface RawEnergyImportRepository extends JpaRepository<RawEnergyImport, Long> {}
