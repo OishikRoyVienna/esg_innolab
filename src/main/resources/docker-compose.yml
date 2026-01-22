@@ -1,6 +1,6 @@
 services:
   app:
-    image: eclipse-temurin:17-jdk    # ← Korrekt!
+    image: eclipse-temurin:17-jdk
     working_dir: /app
     volumes:
       - ./:/app
@@ -10,7 +10,7 @@ services:
         mvn clean compile exec:java -Dexec.mainClass=org.esg.EsgApplication -Dexec.classpathScope=compile
       "
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/esg_db
       SPRING_DATASOURCE_USERNAME: esg_user
