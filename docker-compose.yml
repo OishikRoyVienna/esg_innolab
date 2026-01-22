@@ -1,13 +1,13 @@
 services:
   app:
-    image: eclipse-temurin:17-jdk-slim   # ← SO ist es richtig!
+    image: eclipse-temurin:17-jdk    # ← Korrekt!
     working_dir: /app
     volumes:
       - ./:/app
     command: >
       sh -c "
         apt-get update && apt-get install -y maven &&
-        mvn clean compile exec:java -Dexec.mainClass=org.esg.EsgPocApplication -Dexec.classpathScope=compile
+        mvn clean compile exec:java -Dexec.mainClass=org.esg.EsgApplication -Dexec.classpathScope=compile
       "
     ports:
       - "8080:8080"
