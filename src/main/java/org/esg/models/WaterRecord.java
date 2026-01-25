@@ -1,4 +1,4 @@
-package org.esg;
+package org.esg.models;
 
 import jakarta.persistence.*;
 
