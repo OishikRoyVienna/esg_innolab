@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+//
 @RestController
 @RequestMapping("/api/esg")
 public class ReportController {
