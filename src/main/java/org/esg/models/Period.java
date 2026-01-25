@@ -20,4 +20,8 @@ public class Period {
         this.periodId = periodId;
         this.yearLabel = yearLabel;
     }
+
+    public void setYearLabel(String yearLabel) {
+        this.yearLabel = yearLabel;
+    }
 }

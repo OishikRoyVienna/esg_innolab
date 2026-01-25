@@ -1,5 +1,6 @@
-package org.esg;
+package org.esg.controller;
 
+import org.esg.WaterRepo;
 import org.esg.services.CsvImportService;
 import org.esg.services.EnergyAggregationService;
 import org.springframework.web.bind.annotation.*;

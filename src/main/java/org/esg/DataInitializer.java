@@ -2,6 +2,7 @@ package org.esg;
 
 import com.opencsv.CSVReader;
 import org.esg.models.RawEnergyImport;
+import org.esg.repositories.RawEnergyImportRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;

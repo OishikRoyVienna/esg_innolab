@@ -1,7 +1,7 @@
 package org.esg.services;
 
 import com.opencsv.CSVReader;
-import org.esg.RawEnergyImportRepository;
+import org.esg.repositories.RawEnergyImportRepository;
 import org.esg.models.RawEnergyImport;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

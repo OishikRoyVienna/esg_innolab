@@ -2,15 +2,16 @@ package org.esg.services;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.esg.RawEnergyImportRepository;
 import org.esg.models.*;
 import org.esg.repositories.LocationRepository;
 import org.esg.repositories.MeasurementRepository;
 import org.esg.repositories.MetricRepository;
 import org.esg.repositories.PeriodRepository;
+import org.esg.repositories.RawEnergyImportRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,41 +25,59 @@ public class EnergyAggregationService {
 
     @Transactional
     public void aggregate() {
-
+        // Stelle sicher, dass die Metrik existiert
         Metric metric = metricRepo.findByName("Energy Consumption")
-                .orElseGet(() -> metricRepo.save(new Metric(null,"Energy Consumption")));
+                .orElseGet(() -> {
+                    Metric m = new Metric();
+                    m.setName("Energy Consumption");
+                    return metricRepo.save(m);
+                });
 
         for (RawEnergyImport r : rawRepo.findAll()) {
+            // Periode erstellen oder laden
+            Period period = periodRepo.findByYearLabel(r.getYearLabel())
+                    .orElseGet(() -> {
+                        Period p = new Period();
+                        p.setYearLabel(r.getYearLabel());
+                        return periodRepo.save(p);
+                    });
 
-            Period p = periodRepo.findByYearLabel(r.getYearLabel())
-                    .orElseGet(() -> periodRepo.save(new Period(null,r.getYearLabel())));
+            // Standort (Location) erstellen oder laden
+            Location location = locationRepo.findByName(r.getLocation())
+                    .orElseGet(() -> {
+                        Location l = new Location();
+                        l.setName(r.getLocation());
+                        return locationRepo.save(l);
+                    });
 
-            Location loc = locationRepo.findByName(r.getLocation())
-                    .orElseGet(() -> locationRepo.save(new Location(null,r.getLocation())));
-
-            var existing = measurementRepo
+            // Prüfen, ob Messung bereits existiert
+            Optional<Measurement> existing = measurementRepo
                     .findByLocationAndMetricAndPeriodAndYearAndMonth(
-                            loc, metric, p,
+                            location, metric, period,
                             r.getYear(), r.getMonth());
 
-            Measurement m;
-
+            Measurement measurement;
             if (existing.isPresent()) {
-                m = existing.get();          // UPDATE existing row
+                measurement = existing.get(); // Update
             } else {
-                m = new Measurement();       // CREATE new row
-                m.setLocation(loc);
-                m.setMetric(metric);
-                m.setPeriod(p);
-                m.setYear(r.getYear());
-                m.setMonth(r.getMonth());
+                measurement = new Measurement(); // Neu anlegen
+                measurement.setLocation(location);
+                measurement.setMetric(metric);
+                measurement.setPeriod(period);
+                measurement.setYear(r.getYear());
+                measurement.setMonth(r.getMonth());
             }
 
-            m.setUnit(r.getUnit());
-            m.setValue(new BigDecimal(r.getValue()));
+            // Werte setzen
+            measurement.setUnit(r.getUnit());
+            try {
+                measurement.setValue(new BigDecimal(r.getValue()));
+            } catch (NumberFormatException e) {
+                // Überspringe ungültige Werte (z. B. "xx")
+                continue;
+            }
 
-            measurementRepo.save(m);
-
+            measurementRepo.save(measurement);
         }
     }
 }

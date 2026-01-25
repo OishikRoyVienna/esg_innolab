@@ -1,4 +1,4 @@
-package org.esg;
+package org.esg.repositories;
 
 import org.esg.models.RawEnergyImport;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -3,7 +3,7 @@ package org.esg.models;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name="locations")
+@Table(name = "locations")
 public class Location {
 
     @Id
@@ -13,10 +13,23 @@ public class Location {
     @Column(unique = true, nullable = false)
     private String name;
 
+    // No-args Konstruktor – JPA benötigt ihn!
     public Location() {}
 
-    public Location(Long locationId, String name) {
+    // Optional: Getter & Setter
+    public Long getLocationId() {
+        return locationId;
+    }
+
+    public void setLocationId(Long locationId) {
         this.locationId = locationId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
         this.name = name;
     }
 }
