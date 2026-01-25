@@ -13,10 +13,8 @@ public class Location {
     @Column(unique = true, nullable = false)
     private String name;
 
-    // No-args Konstruktor – JPA benötigt ihn!
     public Location() {}
 
-    // Optional: Getter & Setter
     public Long getLocationId() {
         return locationId;
     }
